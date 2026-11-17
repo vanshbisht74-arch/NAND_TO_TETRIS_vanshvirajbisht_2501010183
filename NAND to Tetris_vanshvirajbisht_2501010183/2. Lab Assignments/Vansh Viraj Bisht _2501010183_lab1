@@ -1,0 +1,148 @@
+NAND to Tetris-I Lab 1: Digital Logic & ALU Design 
+Name:Vamnsh viraj bisht
+Roll No: 2501010183 Email: 2501010183@krmu.edu.in Q1. Q-2 (5 marks)  
+Truth Table: 
+A-------B-----------Out 
+0-------0-----------0 
+0-------1-----------1 
+1--------0----------1 
+1---------1---------0 
+HDL Code  
+CHIP Xor{ 
+IN a,b; 
+OUT out; 
+PARTS: 
+Not(in=a,out=nota); 
+Not(in=b,out=notb); 
+And(a=a,b=notb,out=x); 
+Or(a=x,b=y,out=out); 
+}  
+2 way mux 
+Truth Table: 
+A B sel out 
+0 0 0 0 
+0 1 0 0 
+1 0 0 1 
+1 1 01 
+0 0 1 0 
+0 1 1 1 
+1 0 1 0 
+1 1 1 1 
+Chip Mux{ 
+In a,b,sel; 
+OUT out; 
+PARTS: 
+Not(in=sel,out=nsel); 
+And(a=a,b=nsel,out=x); 
+And(a=b,b=sel,out=y); 
+Or(a=x,b=y,out=out); 
+} 
+Truth Table: 
+sel1Sel0Out 
+00A 
+01B 
+10C 
+11D 
+Chip Mux4Way{ 
+IN a,b,c,d,sel[2]; 
+OUT out; 
+PARTS: 
+Mux(a=a,b=b,sel=sel[0],out=x); 
+Mux(a=c,b=d,sel=sel[0],out=y); 
+Mux(a=x,b=y,sel=sel[1],out=out); 
+} 
+Dmux 
+Truth Table 
+InSelAB 
+0000 
+0100 
+1010 
+1101 
+Dmux: 
+Chip Dmux{ 
+IN in , sel; 
+OUT a,b; 
+PARTS: 
+Not(in=sel,out=nsel); 
+and(a=in,b=nsel,out=a); 
+and(a=in,b=sel,out=b); 
+} 
+Q2. Q-3 (5 marks)  
+Chip HalfAdder{ 
+In a,b; 
+OUT sum,carry; 
+PARTS: 
+Xor(a=a,b=b,out=sum); 
+And(a=a,b=b,out=carry); 
+} 
+Chip FullAdder{ 
+In a,b,c; 
+OUT sum,carry; 
+PARTS: 
+HalfAdder(a=a,b=b,sum=s1,carry=c1); 
+HalfAdder(a=s1,b=c,sum=sum,carry=c2); 
+Or(a=c1,b=c2,out=carry); 
+} 
+Q3. Q-4 (5 marks)  
+// 16-bit Ripple Carry Adder 
+module full_adder( 
+input a, b, cin, 
+output sum, cout 
+); 
+assign sum = a ^ b ^ cin; 
+assign cout = (a & b) | (b & cin) | (a & cin); 
+endmodule 
+module ripple_carry_adder_16bit( 
+input [15:0] A, B, 
+input Cin, 
+output [15:0] Sum, 
+output Cout, 
+output Overflow 
+); 
+wire [16:0] C; 
+assign C[0] = Cin; 
+genvar i; 
+generate 
+for(i = 0; i < 16; i = i + 1) begin 
+full_adder FA( 
+.a(A[i]), 
+.b(B[i]), 
+.cin(C[i]), 
+.sum(Sum[i]), 
+.cout(C[i+1]) 
+); 
+end 
+endgenerate 
+assign Cout = C[16]; 
+assign Overflow = C[15] ^ C[16]; 
+endmodule 
+// Testbench 
+module testbench; 
+reg [15:0] A, B; 
+reg Cin; 
+wire [15:0] Sum; 
+wire Cout, Overflow; 
+ripple_carry_adder_16bit RCA( 
+.A(A), 
+.B(B), 
+.Cin(Cin), 
+.Sum(Sum), 
+.Cout(Cout), 
+.Overflow(Overflow) 
+); 
+initial begin 
+$monitor("A=%h B=%h Sum=%h Cout=%b Overflow=%b", 
+A, B, Sum, Cout, Overflow); 
+// Test 1 
+A = 16'h1234; 
+B = 16'h4321; 
+Cin = 0; 
+#10; 
+// Test 2 
+A = 16'h7FFF; 
+B = 16'h0001; 
+Cin = 0; 
+#10; 
+$finish; 
+end 
+endmodule 
