@@ -1,1 +1,369 @@
-
+NAND to Tetris-I  
+Lab 2: Sequential Logic & Memory Hierarchy  
+Name: Vansh viraj bisht Roll No: 2501010183 
+ Email: 2501010183@krmu.edu.in  
+ 
+Q1. Q-2 (5 marks) 
+ module Register16( 
+    input clk,load, 
+    input [15:0] in, 
+    output reg [15:0] out 
+); 
+    always @(posedge clk) 
+        if(load) 
+            out <= in; 
+endmodule 
+ 
+module Testbench; 
+    reg clk,load; 
+    reg [15:0] in; 
+    wire [15:0] out; 
+ 
+    Register16 R(clk,load,in,out); 
+ 
+    always #5 clk=~clk; 
+ 
+    initial begin 
+        clk=0; 
+        load=1; 
+ 
+        in=16'h1234; 
+        #10; 
+        $display("Input=%h Output=%h",in,out); 
+ 
+        in=16'hABCD; 
+        #10; 
+        $display("Input=%h Output=%h",in,out); 
+ 
+        in=16'h5678; 
+        #10; 
+        $display("Input=%h Output=%h",in,out); 
+ 
+        load=0; 
+        $finish; 
+    end 
+endmodule 
+Q2. Q-3 (6 marks) 
+ module RegisterFile( 
+    input clk,we, 
+    input [2:0] waddr,raddr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    reg [15:0] mem[0:7]; 
+ 
+    always @(posedge clk) 
+        if(we) 
+            mem[waddr] <= din; 
+ 
+    assign dout = mem[raddr]; 
+endmodule 
+ 
+module Testbench; 
+    reg clk,we; 
+    reg [2:0] waddr,raddr; 
+    reg [15:0] din; 
+    wire [15:0] dout; 
+ 
+    RegisterFile RF(clk,we,waddr,raddr,din,dout); 
+ 
+    always #5 clk=~clk; 
+ 
+    integer i,j; 
+ 
+    initial begin 
+        clk=0; 
+        we=1; 
+ 
+        for(i=0;i<4;i=i+1) begin 
+            @(negedge clk); 
+            waddr=i; 
+            din=16'h1000+i; 
+ 
+            @(posedge clk); 
+            #1; 
+            $display("\nAfter writing R[%0d]",i); 
+ 
+            for(j=0;j<8;j=j+1) 
+                $display("R[%0d]=%h",j,RF.mem[j]); 
+        end 
+ 
+        we=0; 
+ 
+        for(i=0;i<4;i=i+1) begin 
+            raddr=i; 
+            #1; 
+            $display("Read R[%0d]=%h",raddr,dout); 
+        end 
+ 
+        $finish; 
+    end 
+endmodule 
+ 
+Q3. Q-4 (5 marks)  
+module Register16( 
+    input clk,load, 
+    input [15:0] in, 
+    output reg [15:0] out 
+); 
+    always @(posedge clk) 
+        if(load) 
+            out <= in; 
+endmodule 
+ 
+module RAM8( 
+    input clk,we, 
+    input [2:0] addr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    wire [15:0] q[0:7]; 
+ 
+    genvar i; 
+    generate 
+        for(i=0;i<8;i=i+1) begin 
+            Register16 R( 
+                clk,we && (addr==i),din,q[i] 
+            ); 
+        end 
+    endgenerate 
+ 
+    assign dout=q[addr]; 
+endmodule 
+ 
+module RAM64( 
+    input clk,we, 
+    input [5:0] addr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    wire [15:0] q[0:7]; 
+ 
+    genvar i; 
+    generate 
+        for(i=0;i<8;i=i+1) begin 
+            RAM8 R( 
+                clk, 
+                we && (addr[5:3]==i), 
+                addr[2:0], 
+                din, 
+                q[i] 
+            ); 
+        end 
+    endgenerate 
+ 
+    assign dout=q[addr[5:3]]; 
+endmodule 
+ 
+module Testbench; 
+    reg clk,we; 
+    reg [5:0] addr; 
+    reg [15:0] din; 
+    wire [15:0] dout; 
+ 
+    RAM64 M(clk,we,addr,din,dout); 
+ 
+    always #5 clk=~clk; 
+ 
+    initial begin 
+        clk=0; 
+        we=1; 
+        addr=6'b101011; 
+        din=16'hCAFE; 
+ 
+        $display("Address=%b",addr); 
+        $display("RAM8 Chip=%b",addr[5:3]); 
+        $display("Register=%b",addr[2:0]); 
+ 
+        @(posedge clk); 
+        #1; 
+        we=0; 
+        #1; 
+        $display("Read Data=%h",dout); 
+ 
+        $finish; 
+    end 
+endmodule 
+ Q4. Q-5 (5 marks)  
+module Register16( 
+    input clk,load, 
+    input [15:0] in, 
+    output reg [15:0] out 
+); 
+    always @(posedge clk) 
+        if(load) 
+            out <= in; 
+endmodule 
+ 
+module RAM8( 
+    input clk,we, 
+    input [2:0] addr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    wire [15:0] q[0:7]; 
+ 
+    genvar i; 
+    generate 
+        for(i=0;i<8;i=i+1) 
+            Register16 R(clk,we&&(addr==i),din,q[i]); 
+    endgenerate 
+ 
+    assign dout=q[addr]; 
+endmodule 
+ 
+module RAM64( 
+    input clk,we, 
+    input [5:0] addr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    wire [15:0] q[0:7]; 
+ 
+    genvar i; 
+    generate 
+        for(i=0;i<8;i=i+1) 
+            RAM8 R(clk,we&&(addr[5:3]==i), 
+                   addr[2:0],din,q[i]); 
+    endgenerate 
+ 
+    assign dout=q[addr[5:3]]; 
+endmodule 
+ 
+module RAM512( 
+    input clk,we, 
+    input [8:0] addr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    wire [15:0] q[0:7]; 
+ 
+    genvar i; 
+    generate 
+        for(i=0;i<8;i=i+1) 
+            RAM64 R(clk,we&&(addr[8:6]==i), 
+                    addr[5:0],din,q[i]); 
+    endgenerate 
+ 
+    assign dout=q[addr[8:6]]; 
+endmodule 
+ 
+module RAM8K( 
+    input clk,we, 
+    input [12:0] addr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    wire [15:0] q[0:15]; 
+ 
+    genvar i; 
+    generate 
+        for(i=0;i<16;i=i+1) 
+            RAM512 R(clk,we&&(addr[12:9]==i), 
+                     addr[8:0],din,q[i]); 
+    endgenerate 
+ 
+    assign dout=q[addr[12:9]]; 
+endmodule 
+ 
+module RAM16K( 
+    input clk,we, 
+    input [13:0] addr, 
+    input [15:0] din, 
+    output [15:0] dout 
+); 
+    wire [15:0] q[0:1]; 
+ 
+    genvar i; 
+    generate 
+        for(i=0;i<2;i=i+1) 
+            RAM8K R(clk,we&&(addr[13]==i), 
+                    addr[12:0],din,q[i]); 
+    endgenerate 
+ 
+    assign dout=q[addr[13]]; 
+endmodule 
+ 
+ 
+// Testbench 
+ 
+module Testbench; 
+    reg clk,we; 
+    reg [13:0] addr; 
+    reg [15:0] din; 
+ 
+    wire [15:0] out512,out8k,out16k; 
+ 
+    RAM512 M1(clk,we,addr[8:0],din,out512); 
+    RAM8K M2(clk,we,addr[12:0],din,out8k); 
+    RAM16K M3(clk,we,addr,din,out16k); 
+ 
+    always #5 clk=~clk; 
+ 
+    initial begin 
+        clk=0; 
+        we=1; 
+        din=16'hAAAA; 
+ 
+        $display("Memory  Size  Write Latency  Read Latency"); 
+ 
+        addr=14'd300; 
+        @(posedge clk); #1; 
+        $display("RAM512  512   1 cycle        0 cycles"); 
+ 
+        addr=14'd4096; 
+        @(posedge clk); #1; 
+        $display("RAM8K   8192  1 cycle        0 cycles"); 
+ 
+        addr=14'd12000; 
+        @(posedge clk); #1; 
+        $display("RAM16K  16384 1 cycle        0 cycles"); 
+ 
+        we=0; 
+        #1; 
+ 
+        $display("\nWrite latency is one clock cycle."); 
+        $display("Read latency is combinational (zero clock cycles)."); 
+ 
+        $display("\nLatency Comparison:"); 
+        $display("RAM512  | *"); 
+        $display("RAM8K   | *"); 
+        $display("RAM16K  | *"); 
+ 
+        $finish; 
+    end 
+endmodule 
+ 
+Q5. Q-6 (4 marks)  
+CHIP PC{ 
+IN in[16],reset,load,inc; 
+OUT out[16]; 
+PARTS: 
+in[16]( in=outloop , out=incout); 
+MUX(a=outloop , b=incout , sel=inc , out=w1); 
+MUX(a=w1, b=in , sel=load , out=w2); 
+MUX(a=w2, b= false , sel=reset, out=w3); 
+Register(a=w3, load=true , out=outloop,out=out); 
+} 
+in ----- reset ------- load -------inc ---------out 
+1 ----------0----------- 0----------- 1----------- 2 
+2 -----------1----------- 1-------------0-------- 0 
+3 -----------0----------- 1------------ 0--------- 3 
+4 -----------0----------- 0------------ 1--------- 5 
+5 -----------1----------- 1------------- 1--------- 0 
+priority order: reset>load>inc Q6. Q-1 (5 marks)  
+CHIP bit{ 
+IN in , load; 
+OUT out; 
+PARTS: 
+MUX(a=outLoop , b= in , sel =load , out=muxout); 
+DFF(a=muxout, out=outloop , out=out); 
+} 
+clock(t) ----- in-------- out=in(t-1) 
+0 -------------0--------- initial state 
+1 -------------1----------- out from 0 state 
+2 -------------3------------ out from 1 state 
+3-------------- 1 -----------out from 2 state 
+here dff use: 
+out=in(t-1) 
+</p 
